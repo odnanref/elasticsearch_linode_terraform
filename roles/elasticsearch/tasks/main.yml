@@ -1,0 +1,53 @@
+- name: Add apt repo
+  apt:
+    name: apt-transport-https
+    state: present
+
+- name: Install gpg
+  apt:
+    update_cache: yes
+    name: gpg
+    state: present
+
+- name: APT Key add
+  ansible.builtin.apt_key:
+    url: https://artifacts.elastic.co/GPG-KEY-elasticsearch
+    state: present
+
+- name: Add APT Repository
+  ansible.builtin.apt_repository:
+    repo: deb https://artifacts.elastic.co/packages/7.x/apt stable main
+    state: present
+
+- name: Install Elasticsearch
+  apt:
+    update_cache: yes
+    name: elasticsearch
+    state: present
+
+- name: Action on template
+  ansible.builtin.template:
+    src: elasticsearch.yml.j2
+    dest: /etc/elasticsearch/elasticsearch.yml
+
+- name: Make sure a service unit is running
+  ansible.builtin.systemd:
+    state: restarted
+    name: elasticsearch
+
+- name: set hostname
+  ansible.builtin.hostname:
+    name: "{{ node }}"
+    use: "systemd"
+
+- name: install kibana
+  apt:
+    name: kibana
+    state: present
+  when: node == "elasticsearch-1"
+
+- name: Make sure a service unit is running
+  ansible.builtin.systemd:
+    state: restarted
+    name: kibana
+  when: node == "elasticsearch-1"
